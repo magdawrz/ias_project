@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kliknij aby pobrac pogode</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+      #map {
+        height: 100%;
+      }
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      function initMap() {
+        var myLatlng = {lat: 51.107885, lng: 17.038538};
+        var gpsInfoWindow = null;
+        var gpsMarker = null;
+
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 10,
+          center: myLatlng
+        });
+
+        map.addListener('click', function(event) {
+            var lat = event.latLng.lat();
+            var lng = event.latLng.lng();
+            var position = {lat: lat, lng: lng};
+            var apiUrl = '/api/weather/current?' + 'latitude=' + lat + '&longitude=' + lng;
+
+            function prepareData(dataObj) {
+                return 'Temperatura: ' + dataObj.temperature + '°C<br>' +
+                    'Wilgotnosc: ' + dataObj.humidity + '%<br>' +
+                    'Predkosc wiatru: ' + dataObj.win_speed + 'm/s<br>' +
+                    'Cisnienie:' + dataObj.pressure + 'hPa<br>';
+            }
+
+            $.getJSON(apiUrl)
+                .done(function(jsonData) {
+                    console.log('get weather: success');
+                    var darkSky = jsonData[0].dark_sky;
+                    var openWeather = jsonData[1].openweathermap;
+
+                    var darkSkyData = prepareData(darkSky);
+                    var openWeatherData = prepareData(openWeather);
+
+
+                    if (gpsMarker) {
+                        gpsMarker.setMap(null);
+                    }
+                    gpsMarker = new google.maps.Marker({
+                        position: position,
+                        map: map
+                    });
+
+                    if (gpsInfoWindow) {
+                        gpsInfoWindow.close();
+                    }
+                    gpsInfoWindow = new google.maps.InfoWindow({
+                        content: 'DarkSky mowi:<br>' + darkSkyData + '<br>' + 'OpenWeatherMap mowi:<br>' + openWeatherData
+                    });
+
+                    gpsInfoWindow.open(map, gpsMarker);
+                })
+                .fail(function() {
+                    console.log('get weather: fail');
+                });
+            });
+      }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBeotkxkngXKZw1JF8n_6r-RkKPHtAEOIM&callback=initMap">
+    </script>
+  </body>
+</html>
